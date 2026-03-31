@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人作品集 - 你爹</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+TC:wght@300;500;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --accent: #ffffff; 
+            --container-bg: rgba(15, 15, 15, 0.85); /* 深灰色基底 */
+            --card-bg: rgba(255, 255, 255, 0.05); /* 卡片更深一點 */
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Noto Sans TC', sans-serif;
+            color: #fff;
+            background: #000;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* ===== 粒子畫布容器 ===== */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0; /* 放在背景之上，內容之下 */
+            pointer-events: none; /* 讓滑鼠點擊可以穿透粒子層 */
+        }
+
+        /* ===== 背景 GIF 優化 (保持亮度) ===== */
+        .video-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -3;
+            filter: brightness(1.4) contrast(1.1) saturate(1.2);
+        }
+
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -2;
+            mask-image: radial-gradient(circle at center, black, transparent 90%);
+        }
+
+        .overlay {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            padding: 140px 20px 80px;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(3rem, 12vw, 5.5rem);
+            font-weight: 900;
+            letter-spacing: 15px;
+            margin: 0;
+            background: linear-gradient(180deg, #fff 0%, #888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 20px rgba(255,255,255,0.3));
+        }
+
+        header p {
+            font-size: 1rem;
+            letter-spacing: 8px;
+            margin-top: 20px;
+            color: #fff;
+            opacity: 0.8;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .main-wrapper {
+            position: relative;
+            padding: 2px; 
+            border-radius: 40px;
+            background: rgba(255,255,255,0.1);
+            overflow: hidden;
+            margin-bottom: 100px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+        }
+
+        .main-wrapper::before {
+            content: "";
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: conic-gradient(from 0deg, transparent, #fff, transparent, #888, transparent);
+            animation: rotateBorder 6s linear infinite;
+        }
+
+        @keyframes rotateBorder {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            padding: 70px;
+            background: var(--container-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            border-radius: 38px;
+        }
+
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            letter-spacing: 4px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-top: 80px;
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        h2::before {
+            content: "";
+            width: 6px;
+            height: 30px;
+            background: #fff;
+            box-shadow: 0 0 15px #fff;
+            border-radius: 3px;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 35px;
+            margin-top: 30px;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .glass-card:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.4);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .tag {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 5px 15px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-right: 10px;
+        }
+
+        .bio-text {
+            font-size: 1.1rem;
+            color: #ddd;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .rank-item {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .rank-num {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #fff;
+            opacity: 0.3;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .contact-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            padding: 18px;
+            border-radius: 15px;
+            text-align: center;
+            text-decoration: none;
+            color: #fff;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .contact-btn:hover {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 0 30px rgba(255,255,255,0.2);
+        }
+
+        footer {
+            padding: 100px 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+            letter-spacing: 5px;
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: 1.2s all cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .fade-in.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+
+<canvas id="particle-canvas"></canvas>
+<div class="grid-bg"></div>
+
+<video autoplay muted loop playsinline class="video-bg">
+    <source src="13049735_3840_2160_30fps.mp4" type="video/mp4">
+</video>
+
+<div class="overlay">
+    <header>
+        <h1 class="fade-in">J - ARCHIVE</h1>
+        <p class="fade-in">15y | INFP | MUSIC ADDICT</p>
+    </header>
+
+    <div class="main-wrapper fade-in">
+        <div class="container">
+            
+            <h2>關於我 / BIO</h2>
+            <div class="glass-card">
+                <div style="margin-bottom:25px;">
+                    <span class="tag">><</span>
+                    <span class="tag">INFP-T</span>
+                    <span class="tag">GAY</span>
+                    <span class="tag">MUSIC ADDICT</span>
+                </div>
+                <div class="bio-text">
+                    哈囉！我是 <strong>你們的爹地</strong>。一個普通的國三生，還在慢慢探索自己喜歡的東西。<br><br>
+                    平常喜歡打瓦、聽音樂，也會在電腦上研究一些有趣的東西。
+                    對我來說，音樂很重要，有時候戴上耳機，整個世界就會安靜下來。<br><br>
+                    我不是什麼很厲害的人，只是還在找方向。整個超迷茫！但我相信，每個人都有屬於自己的節奏。<br><br>
+                    這個網站是我的第一個小作品，用來記錄一些想法、興趣，還有正在成長的自己？
+                </div>
+                <div style="margin-top:30px; padding-top:25px; border-top:1px solid rgba(255,255,255,0.1); color:#999; font-style:italic;">
+                    最近的生活，其實沒有什麼特別的劇情。上課、回家、滑手機，偶爾打幾場瓦，然後戴上耳機聽音樂。
+                    雖然不確定未來會變成什麼樣子，但至少現在，我還在原地踏步。哈哈哈 三小。
+                </div>
+            </div>
+
+            <h2>STATUS</h2>
+            <div class="glass-card">
+                <div class="bio-text">
+                    • 練鋼琴（慢慢進步中）<br>
+                    • 吃屎<br>
+                    • 找喜歡的音樂<br>
+                    • 想把這個網站做得更好ㄒㄒ
+                </div>
+            </div>
+
+            <h2>NOW PLAYING</h2>
+            <div class="glass-card" style="border-left: 5px solid #fff; animation: breathe 3s infinite alternate;">
+                <strong style="font-size:1.3rem; display:block;">A miserable Live...</strong>
+                <span style="color:#888; font-size:0.9rem;">有些音樂 就是娓娓動聽！好啦 其實是一首情緒低沉的歌曲，透過緩慢的旋律和壓抑的氛圍，表達對生活的無力感與內心的掙扎，讓人產生共鳴(? 好吧 之前看有人玩求偶式瞄準用這首剪</span>
+            </div>
+
+            <style>@keyframes breathe { from { box-shadow: 0 0 10px rgba(255,255,255,0.1); } to { box-shadow: 0 0 25px rgba(255,255,255,0.3); } }</style>
+
+            <h2>TOP 5 ARTISTS</h2>
+            <div class="glass-card" style="padding:0;">
+                <div class="rank-item">
+                    <div class="rank-num">01</div>
+                    <div><strong>周杰倫 / Jay Chou</strong><br><small style="color:#777;">最愛：大笨鐘</small></div>
+                </div>
+                <div class="rank-item">
+                    <div class="rank-num">02</div>
+                    <div><strong>林俊傑 / JJ Lin</strong><br><small style="color:#777;">最愛：凍結</small></div>
+                </div>
+                <div class="rank-item">
+                    <div class="rank-num">03</div>
+                    <div><strong>Strike Thunder、Mixed Matches</strong><br><small style="color:#777;">最愛：Mirror</small></div>
+                </div>
+                <div class="rank-item">
+                    <div class="rank-num">04</div>
+                    <div><strong>bixby</strong><br><small style="color:#777;">最愛：desire</small></div>
+                </div>
+                <div class="rank-item">
+                    <div class="rank-num">05</div>
+                    <div><strong>Starfall</strong><br><small style="color:#777;">最愛：cigarettes</small></div>
+                </div>
+            </div>
+
+            <h2>DREAM LIST</h2>
+            <div class="contact-grid">
+                <div class="glass-card" style="margin:0;">
+                    <strong>成為高手!</strong>
+                    <p style="font-size:0.9rem; color:#888; margin-top:10px;">希望能上鐵牌。然後打爆黃奕綸</p>
+                </div>
+                <div class="glass-card" style="margin:0;">
+                    <strong>踏出世界!</strong>
+                    <p style="font-size:0.9rem; color:#888; margin-top:10px;">帶著快樂去更多地方旅行。</p>
+                </div>
+            </div>
+
+            <h2>CONNECT</h2>
+            <div class="contact-grid">
+                <a href="https://www.instagram.com/han._0106" target="_blank" class="contact-btn">Instagram</a>
+                <div class="contact-btn" onclick="copyEmail()" id="emailBtn" style="cursor:pointer;">Copy Email</div>
+                <div class="contact-btn">Discord: ml.jaychou</div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        © 2026  由馮詩涵開掛製作 | 其實是亂搞的 看到這個的人是給。
+    </footer>
+</div>
+
+<script>
+    /* ===== 粒子特效腳本 ===== */
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    let particlesArray = [];
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+
+    const mouse = {
+        x: null,
+        y: null,
+    };
+
+    window.addEventListener('mousemove', (event) => {
+        mouse.x = event.x;
+        mouse.y = event.y;
+        // 每次移動產生 2 個粒子
+        for (let i = 0; i < 2; i++) {
+            particlesArray.push(new Particle());
+        }
+    });
+
+    class Particle {
+        constructor() {
+            this.x = mouse.x;
+            this.y = mouse.y;
+            this.size = Math.random() * 3 + 1;
+            this.speedX = Math.random() * 2 - 1;
+            this.speedY = Math.random() * 2 - 1;
+            this.color = 'rgba(255, 255, 255, 0.8)';
+            this.life = 1; // 生命值從 1 開始到 0
+        }
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            if (this.size > 0.1) this.life -= 0.015;
+        }
+        draw() {
+            ctx.fillStyle = `rgba(255, 255, 255, ${this.life})`;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function handleParticles() {
+        for (let i = 0; i < particlesArray.length; i++) {
+            particlesArray[i].update();
+            particlesArray[i].draw();
+            if (particlesArray[i].life <= 0) {
+                particlesArray.splice(i, 1);
+                i--;
+            }
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        handleParticles();
+        requestAnimationFrame(animate);
+    }
+    animate();
+
+    /* ===== 原有功能腳本 ===== */
+    function copyEmail(){
+        const email = "fengshihan0106@gmail.com";
+        navigator.clipboard.writeText(email).then(()=>{
+            const btn = document.getElementById("emailBtn");
+            btn.innerText = "COPIED!";
+            btn.style.background = "#fff";
+            btn.style.color = "#000";
+            setTimeout(()=>{ 
+                btn.innerText = "Copy Email";
+                btn.style.background = "";
+                btn.style.color = "";
+            }, 2000);
+        });
+    }
+
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if(entry.isIntersecting) entry.target.classList.add("show");
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll(".fade-in").forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
